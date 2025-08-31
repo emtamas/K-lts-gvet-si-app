@@ -255,19 +255,8 @@
 
         async function initFirebase() {
             try {
-                let finalFirebaseConfig = {};
-                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                    try {
-                        finalFirebaseConfig = JSON.parse(__firebase_config);
-                        console.log("Környezeti változóban megadott Firebase konfigurációt használja a rendszer.");
-                    } catch (e) {
-                        console.error("Hiba a Firebase konfiguráció környezeti változóból történő elemzésekor, visszaáll a beágyazott konfigurációra.", e);
-                        finalFirebaseConfig = firebaseConfig;
-                    }
-                } else {
-                    console.log("A fájlban megadott Firebase konfigurációt használja a rendszer.");
-                    finalFirebaseConfig = firebaseConfig;
-                }
+                // A Firebase konfigurációt fixen a kódban tároljuk, hogy mindig a régi adatokhoz csatlakozzon.
+                const finalFirebaseConfig = firebaseConfig;
                 
                 // Ellenőrizzük, hogy a konfiguráció érvényes-e az inicializálás előtt.
                 if (!finalFirebaseConfig.apiKey || !finalFirebaseConfig.projectId) {
@@ -303,6 +292,7 @@
                 });
 
                 // Kezeli a Gemini környezeti tokeneket
+                // Mostantól a fixen beállított értékekre hagyatkozunk, a biztonság kedvéért.
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     signInWithCustomToken(auth, __initial_auth_token).catch((error) => {
                         console.error("Egyéni token bejelentkezés sikertelen:", error);

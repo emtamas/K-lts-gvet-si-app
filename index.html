@@ -29,18 +29,63 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
     </style>
 </head>
-<body class="bg-gray-100 p-8">
-    <div class="container mx-auto space-y-8">
+<body class="bg-gray-100 p-8 flex items-center justify-center min-h-screen">
+    <div id="loading-screen" class="text-center">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+        <p class="mt-4 text-gray-600">Betöltés...</p>
+    </div>
+
+    <!-- Login/Registration form -->
+    <div id="auth-container" class="w-full max-w-sm hidden">
+        <div class="card p-8 space-y-4">
+            <h2 id="auth-title" class="text-2xl font-bold text-center text-gray-800">Bejelentkezés</h2>
+            <form id="auth-form" class="space-y-4">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email cím</label>
+                    <input type="email" id="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Jelszó</label>
+                    <input type="password" id="password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
+                </div>
+                <button type="submit" id="auth-submit-btn" class="w-full btn bg-indigo-600 text-white hover:bg-indigo-700">Bejelentkezés</button>
+            </form>
+            <div class="text-center text-sm">
+                <button id="toggle-auth" class="text-indigo-600 hover:underline">Még nincs fiókom, regisztrálok</button>
+            </div>
+            <p id="auth-message" class="text-red-500 text-sm text-center hidden"></p>
+        </div>
+    </div>
+
+    <!-- Main App UI -->
+    <div id="app-container" class="container mx-auto space-y-8 hidden">
         <header class="text-center mb-12">
             <h1 class="text-4xl font-bold text-gray-800">Vállalkozási Költségvetés</h1>
         </header>
 
-        <!-- Felhasználói adatok -->
+        <!-- User Info -->
         <div class="card p-4 text-center">
-            <span class="text-sm font-semibold text-gray-500">Felhasználó azonosító:</span>
-            <span id="user-id" class="text-sm font-bold text-gray-700">Betöltés...</span>
+            <div class="flex flex-col md:flex-row items-center justify-between">
+                <div>
+                    <span class="text-sm font-semibold text-gray-500">Felhasználó:</span>
+                    <span id="user-email" class="text-sm font-bold text-gray-700">Betöltés...</span>
+                </div>
+                <button id="logout-btn" class="mt-2 md:mt-0 btn bg-red-500 text-white hover:bg-red-600 text-sm py-1 px-3">Kijelentkezés</button>
+            </div>
         </div>
 
         <!-- Költségvetési Összegző -->
@@ -54,33 +99,19 @@
                 <span id="total-expense" class="text-3xl font-extrabold text-red-600 mt-1">0 Ft</span>
             </div>
             <div class="flex flex-col items-center">
-                <span class="text-sm font-semibold text-gray-500">Összesített Egyenleg</span>
+                <span class="text-sm font-semibold text-gray-500">Egyenleg</span>
                 <span id="balance" class="text-3xl font-extrabold text-blue-600 mt-1">0 Ft</span>
             </div>
         </div>
-        
-        <!-- Havi Egyenleg -->
-        <div class="card p-6">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Havi Pénzügyi Összegző</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="monthly-summary">
-                <!-- A havi egyenlegek ide kerülnek -->
+        <div class="card p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 text-center">
+            <div class="flex flex-col items-center">
+                <span class="text-sm font-semibold text-gray-500">Számlás Tranzakciók</span>
+                <span id="total-invoiced" class="text-2xl font-bold text-gray-800 mt-1">0 Ft</span>
             </div>
-        </div>
-
-        <!-- Fizetési Mód Kimutatás -->
-        <div class="card p-6">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Fizetési Mód szerinti Bontás</h2>
-            <ul id="payment-method-summary" class="space-y-2">
-                <!-- A fizetési módok ide kerülnek -->
-            </ul>
-        </div>
-        
-        <!-- Számlás vs Nem számlás Kimutatás -->
-        <div class="card p-6">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Számlás vs. Nem számlás kimutatás</h2>
-            <ul id="invoice-summary" class="space-y-2">
-                <!-- A számlás kimutatás ide kerül -->
-            </ul>
+            <div class="flex flex-col items-center">
+                <span class="text-sm font-semibold text-gray-500">Nem számlás Tranzakciók</span>
+                <span id="total-not-invoiced" class="text-2xl font-bold text-gray-800 mt-1">0 Ft</span>
+            </div>
         </div>
 
         <!-- Tranzakció Hozzáadása Form -->
@@ -90,19 +121,19 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                         <label for="date" class="block text-sm font-medium text-gray-700">Dátum</label>
-                        <input type="date" id="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2" required disabled>
+                        <input type="date" id="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
                     </div>
                     <div>
                         <label for="description" class="block text-sm font-medium text-gray-700">Leírás</label>
-                        <input type="text" id="description" placeholder="Pl. Takarmány beszerzés" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2" required disabled>
+                        <input type="text" id="description" placeholder="Pl. Takarmány beszerzés" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
                     </div>
                     <div>
                         <label for="amount" class="block text-sm font-medium text-gray-700">Összeg (Ft)</label>
-                        <input type="number" id="amount" placeholder="10000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2" required disabled>
+                        <input type="number" id="amount" placeholder="10000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
                     </div>
                     <div>
                         <label for="business-area" class="block text-sm font-medium text-gray-700">Üzletág</label>
-                        <select id="business-area" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2" required disabled>
+                        <select id="business-area" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
                             <option value="Állatpanzió">Állatpanzió</option>
                             <option value="Kutyakiképzés">Kutyakiképzés</option>
                             <option value="Webshop">Webshop</option>
@@ -114,31 +145,29 @@
                     </div>
                     <div>
                         <label for="payment-method" class="block text-sm font-medium text-gray-700">Fizetési mód</label>
-                        <select id="payment-method" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2" required disabled>
+                        <select id="payment-method" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
                             <option value="Kézpénz">Kézpénz</option>
                             <option value="Utalás">Utalás</option>
                             <option value="MyPOS">MyPOS</option>
                             <option value="Barion">Barion</option>
                         </select>
                     </div>
-                    <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-4 mt-6">
                         <label class="inline-flex items-center">
-                            <input type="radio" name="transaction-type" value="income" checked class="form-radio text-green-600 h-4 w-4" disabled>
+                            <input type="radio" name="transaction-type" value="income" checked class="form-radio text-green-600 h-4 w-4">
                             <span class="ml-2 text-sm text-gray-700">Bevétel</span>
                         </label>
                         <label class="inline-flex items-center">
-                            <input type="radio" name="transaction-type" value="expense" class="form-radio text-red-600 h-4 w-4" disabled>
+                            <input type="radio" name="transaction-type" value="expense" class="form-radio text-red-600 h-4 w-4">
                             <span class="ml-2 text-sm text-gray-700">Kiadás</span>
                         </label>
                     </div>
-                    <div class="flex items-center">
-                        <label class="inline-flex items-center">
-                            <input type="checkbox" id="invoice-checkbox" class="form-checkbox h-4 w-4 text-indigo-600" disabled>
-                            <span class="ml-2 text-sm text-gray-700">Számla</span>
-                        </label>
+                    <div class="flex items-center space-x-2 mt-6">
+                        <input type="checkbox" id="invoiced" class="form-checkbox text-indigo-600 h-4 w-4">
+                        <label for="invoiced" class="text-sm text-gray-700">Számla</label>
                     </div>
                 </div>
-                <button type="submit" class="w-full btn bg-indigo-600 text-white hover:bg-indigo-700" id="add-transaction-btn" disabled>Betöltés...</button>
+                <button type="submit" class="w-full btn bg-indigo-600 text-white hover:bg-indigo-700">Tranzakció hozzáadása</button>
             </form>
         </div>
 
@@ -165,21 +194,29 @@
                 </table>
             </div>
             <div class="mt-4 text-center">
-                <button id="clear-all" class="text-sm text-red-500 hover:text-red-700" disabled>Összes adat törlése</button>
+                <button id="clear-all" class="text-sm text-red-500 hover:text-red-700">Összes adat törlése</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for confirmation -->
+    <div id="confirm-modal" class="modal hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Megerősítés</h3>
+            <p id="confirm-message" class="text-sm text-gray-600 mb-6"></p>
+            <div class="flex justify-end space-x-4">
+                <button id="confirm-cancel" class="btn bg-gray-300 text-gray-800 hover:bg-gray-400">Mégse</button>
+                <button id="confirm-ok" class="btn bg-red-500 text-white hover:bg-red-600">Törlés</button>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase debug log szint beállítása
-        setLogLevel('debug');
-
-        // FIGYELEM: A te egyedi Firebase konfigurációd, amit megosztottál.
+        // Firebase konfiguráció
         const firebaseConfig = {
             apiKey: "AIzaSyDNIjjqn3U954Liv_Uevb_98kBI7yz9_Mk",
             authDomain: "vallalkozasi-koltsegvetes-app.firebaseapp.com",
@@ -188,370 +225,277 @@
             messagingSenderId: "957517210915",
             appId: "1:957517210915:web:9811f265ee72d4e1381896"
         };
-        
-        // Globális változók a Firebase-hez
-        let auth;
-        let db;
-        let transactionsCollection;
-        let userId;
-        let userAuthReady = false;
-        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseApp = initializeApp(firebaseConfig);
+        const auth = getAuth(firebaseApp);
+        const db = getFirestore(firebaseApp);
+
         // UI elemek
+        const loadingScreen = document.getElementById('loading-screen');
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        const authForm = document.getElementById('auth-form');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const authTitle = document.getElementById('auth-title');
+        const authSubmitBtn = document.getElementById('auth-submit-btn');
+        const toggleAuthBtn = document.getElementById('toggle-auth');
+        const authMessage = document.getElementById('auth-message');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userIdSpan = document.getElementById('user-email');
+
         const transactionForm = document.getElementById('transaction-form');
         const transactionList = document.getElementById('transaction-list');
-        const totalIncomeEl = document.getElementById('total-income');
-        const totalExpenseEl = document.getElementById('total-expense');
-        const balanceEl = document.getElementById('balance');
+        const totalIncomeSpan = document.getElementById('total-income');
+        const totalExpenseSpan = document.getElementById('total-expense');
+        const balanceSpan = document.getElementById('balance');
+        const totalInvoicedSpan = document.getElementById('total-invoiced');
+        const totalNotInvoicedSpan = document.getElementById('total-not-invoiced');
         const clearAllBtn = document.getElementById('clear-all');
-        const userIdEl = document.getElementById('user-id');
-        const addTransactionBtn = document.getElementById('add-transaction-btn');
-        const formInputs = transactionForm.querySelectorAll('input, select');
-        const monthlySummaryEl = document.getElementById('monthly-summary');
-        const paymentMethodSummaryEl = document.getElementById('payment-method-summary');
-        const invoiceSummaryEl = document.getElementById('invoice-summary');
 
-        // Egyedi modális ablak a figyelmeztetésekhez (alert() és confirm() helyett)
-        function showModal(message, onConfirm = null) {
-            const modalHtml = `
-                <div id="custom-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
-                    <div class="relative mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                        <div class="mt-3 text-center">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900">${message}</h3>
-                            <div class="mt-2 px-7 py-3">
-                                ${onConfirm ? `
-                                    <div class="flex justify-center space-x-4">
-                                        <button id="modal-confirm" class="btn bg-red-600 text-white hover:bg-red-700">Igen</button>
-                                        <button id="modal-cancel" class="btn bg-gray-300 text-gray-800 hover:bg-gray-400">Mégsem</button>
-                                    </div>
-                                ` : `
-                                    <button id="modal-close" class="btn bg-indigo-600 text-white hover:bg-indigo-700">OK</button>
-                                `}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmMessage = document.getElementById('confirm-message');
+        const confirmCancelBtn = document.getElementById('confirm-cancel');
+        const confirmOkBtn = document.getElementById('confirm-ok');
 
-            const modal = document.getElementById('custom-modal');
-            const closeBtn = document.getElementById('modal-close');
-            const confirmBtn = document.getElementById('modal-confirm');
-            const cancelBtn = document.getElementById('modal-cancel');
+        let isLoginMode = true;
+        let unsubscribeFromTransactions = null;
+        let currentUserId = null;
 
-            if (closeBtn) {
-                closeBtn.onclick = () => modal.remove();
+        const showMessage = (message, isError = true) => {
+            authMessage.textContent = message;
+            authMessage.style.color = isError ? 'red' : 'green';
+            authMessage.classList.remove('hidden');
+        };
+
+        const showApp = (user) => {
+            loadingScreen.classList.add('hidden');
+            authContainer.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+            userIdSpan.textContent = user.email;
+            currentUserId = user.uid;
+            
+            if (unsubscribeFromTransactions) {
+                unsubscribeFromTransactions();
             }
-            if (confirmBtn) {
-                confirmBtn.onclick = () => {
-                    onConfirm();
-                    modal.remove();
-                };
-            }
-            if (cancelBtn) {
-                cancelBtn.onclick = () => modal.remove();
-            };
-        }
 
-        async function initFirebase() {
-            try {
-                // A Firebase konfigurációt fixen a kódban tároljuk, hogy mindig a régi adatokhoz csatlakozzon.
-                const finalFirebaseConfig = firebaseConfig;
-                
-                // Ellenőrizzük, hogy a konfiguráció érvényes-e az inicializálás előtt.
-                if (!finalFirebaseConfig.apiKey || !finalFirebaseConfig.projectId) {
-                    throw new Error("Hiányzó Firebase API kulcs vagy projekt azonosító a konfigurációból.");
-                }
-
-                const app = initializeApp(finalFirebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                
-                // onAuthStateChanged figyelő, amely megbízhatóan kezeli a felhasználói állapotot
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        userIdEl.textContent = userId;
-                        userAuthReady = true;
-                        formInputs.forEach(input => input.disabled = false);
-                        addTransactionBtn.disabled = false;
-                        addTransactionBtn.textContent = 'Hozzáadás';
-                        clearAllBtn.disabled = false;
-                        // Firestore gyűjtemény elérési útja
-                        transactionsCollection = collection(db, `artifacts/${finalFirebaseConfig.appId}/users/${userId}/transactions`);
-                        listenForTransactions();
-                        console.log("Sikeres Firebase hitelesítés, felhasználó azonosító:", userId);
-                    } else {
-                        signInAnonymously(auth).catch((error) => {
-                            console.error("Névtelen bejelentkezés sikertelen:", error);
-                            userIdEl.textContent = 'Hiba a csatlakozásban!';
-                            addTransactionBtn.textContent = 'Hiba a csatlakozásban!';
-                            showModal(`Hiba a csatlakozáskor: ${error.message}`);
-                        });
-                    }
-                });
-
-                // Kezeli a Gemini környezeti tokeneket
-                // Mostantól a fixen beállított értékekre hagyatkozunk, a biztonság kedvéért.
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    signInWithCustomToken(auth, __initial_auth_token).catch((error) => {
-                        console.error("Egyéni token bejelentkezés sikertelen:", error);
-                    });
-                } else {
-                    signInAnonymously(auth).catch((error) => {
-                        console.error("Névtelen bejelentkezés sikertelen:", error);
-                    });
-                }
-            } catch (error) {
-                console.error("Firebase inicializálás sikertelen:", error);
-                userIdEl.textContent = 'Hiba a csatlakozásban!';
-                addTransactionBtn.textContent = 'Hiba a csatlakozásban!';
-                showModal(`Hiba a csatlakozáskor: ${error.message}`);
-            }
-        }
-
-        function listenForTransactions() {
-            if (!userAuthReady || !userId) {
-                console.log("Hitelesítés még nem történt meg, a Firestore figyelő beállítása kimarad.");
-                return;
-            }
-            const q = query(transactionsCollection);
-
-            onSnapshot(q, (querySnapshot) => {
-                const transactions = [];
+            const q = query(
+                collection(db, `/artifacts/${appId}/users/${currentUserId}/transactions`)
+            );
+            
+            unsubscribeFromTransactions = onSnapshot(q, (querySnapshot) => {
                 let totalIncome = 0;
                 let totalExpense = 0;
-
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const transaction = {
-                        id: doc.id,
-                        ...data
-                    };
-                    transactions.push(transaction);
-
-                    if (data.type === 'income') {
-                        totalIncome += data.amount;
-                    } else {
-                        totalExpense += data.amount;
-                    }
-                });
+                let totalInvoiced = 0;
+                let totalNotInvoiced = 0;
+                transactionList.innerHTML = '';
                 
-                // Tranzakciók rendezése dátum szerint, csökkenő sorrendben
-                transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+                if (querySnapshot.empty) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">Nincsenek tranzakciók.</td>`;
+                    transactionList.appendChild(row);
+                } else {
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        const amount = parseFloat(data.amount);
+                        
+                        if (data.type === 'income') {
+                            totalIncome += amount;
+                        } else {
+                            totalExpense += amount;
+                        }
 
-                renderTransactions(transactions);
-                renderMonthlySummary(transactions);
-                renderPaymentMethodSummary(transactions);
-                renderInvoiceSummary(transactions);
+                        if (data.invoiced) {
+                            totalInvoiced += amount;
+                        } else {
+                            totalNotInvoiced += amount;
+                        }
+                        
+                        const row = document.createElement('tr');
+                        row.className = data.type === 'income' ? 'bg-green-50' : 'bg-red-50';
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.date}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${data.businessArea}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.description}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ${data.type === 'income' ? 'text-green-600' : 'text-red-600'}">${amount.toLocaleString('hu-HU')} Ft</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.paymentMethod}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.invoiced ? '✅' : '❌'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.type === 'income' ? 'Bevétel' : 'Kiadás'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button data-id="${doc.id}" class="text-indigo-600 hover:text-indigo-900 delete-btn">Törlés</button>
+                            </td>
+                        `;
+                        transactionList.appendChild(row);
+                    });
+                }
+                
+                totalIncomeSpan.textContent = `${totalIncome.toLocaleString('hu-HU')} Ft`;
+                totalExpenseSpan.textContent = `${totalExpense.toLocaleString('hu-HU')} Ft`;
+                balanceSpan.textContent = `${(totalIncome - totalExpense).toLocaleString('hu-HU')} Ft`;
+                totalInvoicedSpan.textContent = `${totalInvoiced.toLocaleString('hu-HU')} Ft`;
+                totalNotInvoicedSpan.textContent = `${totalNotInvoiced.toLocaleString('hu-HU')} Ft`;
 
-                totalIncomeEl.textContent = totalIncome.toLocaleString('hu-HU') + ' Ft';
-                totalExpenseEl.textContent = totalExpense.toLocaleString('hu-HU') + ' Ft';
-                const balance = totalIncome - totalExpense;
-                balanceEl.textContent = balance.toLocaleString('hu-HU') + ' Ft';
-                balanceEl.style.color = balance >= 0 ? 'green' : 'red';
+                // Add event listeners to delete buttons
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const docId = e.target.dataset.id;
+                        confirmMessage.textContent = "Biztosan törölni szeretnéd ezt a tranzakciót?";
+                        confirmModal.classList.remove('hidden');
+                        confirmOkBtn.onclick = async () => {
+                            try {
+                                const docRef = doc(db, `/artifacts/${appId}/users/${currentUserId}/transactions/${docId}`);
+                                await deleteDoc(docRef);
+                                confirmModal.classList.add('hidden');
+                            } catch (error) {
+                                console.error("Hiba a tranzakció törlésekor:", error);
+                                confirmModal.classList.add('hidden');
+                            }
+                        };
+                        confirmCancelBtn.onclick = () => {
+                            confirmModal.classList.add('hidden');
+                        };
+                    });
+                });
             }, (error) => {
-                console.error("Hiba a tranzakciók figyelésekor: valószínűleg hiányos jogosultságok a Firebase-ben.", error);
-                showModal("Sajnálom, de úgy tűnik, nincs jogosultságod az adatok olvasásához. Kérlek, ellenőrizd a Firebase Security Rules beállításait, vagy lépj kapcsolatba a fejlesztővel a jogosultságok beállításához.");
+                console.error("Hiba a tranzakciók figyelésekor:", error);
             });
-        }
+        };
 
-        function renderTransactions(transactions) {
-            transactionList.innerHTML = '';
-            transactions.forEach((transaction) => {
-                const row = document.createElement('tr');
-                const amountColor = transaction.type === 'income' ? 'text-green-600' : 'text-red-600';
-                const invoiceStatus = transaction.invoiced ? '✅' : '❌';
+        const showAuth = () => {
+            loadingScreen.classList.add('hidden');
+            appContainer.classList.add('hidden');
+            authContainer.classList.remove('hidden');
+        };
 
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${transaction.date}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${transaction.businessArea}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${transaction.description}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${amountColor}">${transaction.amount.toLocaleString('hu-HU')} Ft</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${transaction.paymentMethod || 'Nincs adat'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${invoiceStatus}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${transaction.type === 'income' ? 'Bevétel' : 'Kiadás'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button onclick="deleteTransaction('${transaction.id}')" class="text-red-600 hover:text-red-900">Törlés</button>
-                    </td>
-                `;
-                transactionList.appendChild(row);
-            });
-        }
-        
-        function renderMonthlySummary(transactions) {
-            monthlySummaryEl.innerHTML = '';
-            const monthlyData = transactions.reduce((acc, transaction) => {
-                const date = new Date(transaction.date);
-                const monthYear = date.toLocaleString('hu-HU', { month: 'long', year: 'numeric' });
-                if (!acc[monthYear]) {
-                    acc[monthYear] = { income: 0, expense: 0 };
-                }
-                if (transaction.type === 'income') {
-                    acc[monthYear].income += transaction.amount;
+        // Auth state listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                showApp(user);
+            } else {
+                showAuth();
+            }
+        });
+
+        // Auth form submission
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            authSubmitBtn.disabled = true;
+            authMessage.classList.add('hidden');
+
+            try {
+                if (isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, password);
                 } else {
-                    acc[monthYear].expense += transaction.amount;
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    showMessage('Sikeres regisztráció! Jelentkezz be.', false);
+                    isLoginMode = true;
+                    authTitle.textContent = "Bejelentkezés";
+                    authSubmitBtn.textContent = "Bejelentkezés";
+                    toggleAuthBtn.textContent = "Még nincs fiókom, regisztrálok";
                 }
-                return acc;
-            }, {});
-
-            for (const month in monthlyData) {
-                const { income, expense } = monthlyData[month];
-                const balance = income - expense;
-                const balanceColor = balance >= 0 ? 'text-green-600' : 'text-red-600';
-
-                const summaryCard = document.createElement('div');
-                summaryCard.className = 'card p-4 text-center border border-gray-200';
-                summaryCard.innerHTML = `
-                    <h3 class="text-xl font-semibold text-gray-800">${month}</h3>
-                    <p class="mt-1 text-sm text-gray-500">Bevétel: <span class="text-green-600 font-medium">${income.toLocaleString('hu-HU')} Ft</span></p>
-                    <p class="mt-1 text-sm text-gray-500">Kiadás: <span class="text-red-600 font-medium">${expense.toLocaleString('hu-HU')} Ft</span></p>
-                    <p class="mt-2 text-md font-bold ${balanceColor}">Egyenleg: ${balance.toLocaleString('hu-HU')} Ft</p>
-                `;
-                monthlySummaryEl.appendChild(summaryCard);
+            } catch (error) {
+                console.error("Auth hiba:", error);
+                let message = "Hiba történt. Kérlek, próbáld újra.";
+                if (error.code === 'auth/invalid-email') {
+                    message = "Hibás email cím.";
+                } else if (error.code === 'auth/user-not-found') {
+                    message = "A felhasználó nem található.";
+                } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    message = "Hibás jelszó.";
+                } else if (error.code === 'auth/email-already-in-use') {
+                    message = "Az email cím már használatban van.";
+                } else if (error.code === 'auth/weak-password') {
+                    message = "A jelszónak legalább 6 karakter hosszúnak kell lennie.";
+                }
+                showMessage(message);
+            } finally {
+                authSubmitBtn.disabled = false;
             }
-        }
+        });
 
-        function renderPaymentMethodSummary(transactions) {
-            paymentMethodSummaryEl.innerHTML = '';
-            const paymentMethods = transactions.reduce((acc, transaction) => {
-                const method = transaction.paymentMethod || 'Ismeretlen';
-                if (!acc[method]) {
-                    acc[method] = 0;
-                }
-                if (transaction.type === 'income') {
-                    acc[method] += transaction.amount;
-                } else {
-                    acc[method] -= transaction.amount;
-                }
-                return acc;
-            }, {});
-
-            for (const method in paymentMethods) {
-                const amount = paymentMethods[method];
-                const amountColor = amount >= 0 ? 'text-green-600' : 'text-red-600';
-                const listItem = document.createElement('li');
-                listItem.className = 'flex justify-between items-center bg-gray-50 p-3 rounded-md';
-                listItem.innerHTML = `
-                    <span class="text-gray-600 font-medium">${method}:</span>
-                    <span class="${amountColor} font-bold">${amount.toLocaleString('hu-HU')} Ft</span>
-                `;
-                paymentMethodSummaryEl.appendChild(listItem);
+        // Toggle login/registration mode
+        toggleAuthBtn.addEventListener('click', () => {
+            isLoginMode = !isLoginMode;
+            if (isLoginMode) {
+                authTitle.textContent = "Bejelentkezés";
+                authSubmitBtn.textContent = "Bejelentkezés";
+                toggleAuthBtn.textContent = "Még nincs fiókom, regisztrálok";
+            } else {
+                authTitle.textContent = "Regisztráció";
+                authSubmitBtn.textContent = "Regisztráció";
+                toggleAuthBtn.textContent = "Már van fiókom, bejelentkezem";
             }
-        }
-        
-        function renderInvoiceSummary(transactions) {
-            invoiceSummaryEl.innerHTML = '';
-            const invoiceData = transactions.reduce((acc, transaction) => {
-                const isInvoice = transaction.invoiced || false;
-                const key = isInvoice ? 'Számlás' : 'Nem számlás';
-                if (!acc[key]) {
-                    acc[key] = { income: 0, expense: 0, balance: 0 };
-                }
-                if (transaction.type === 'income') {
-                    acc[key].income += transaction.amount;
-                    acc[key].balance += transaction.amount;
-                } else {
-                    acc[key].expense += transaction.amount;
-                    acc[key].balance -= transaction.amount;
-                }
-                return acc;
-            }, {});
+            authMessage.classList.add('hidden');
+        });
 
-            for (const type in invoiceData) {
-                const { income, expense, balance } = invoiceData[type];
-                const balanceColor = balance >= 0 ? 'text-green-600' : 'text-red-600';
-                const listItem = document.createElement('li');
-                listItem.className = 'flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50 p-3 rounded-md';
-                listItem.innerHTML = `
-                    <span class="text-gray-600 font-bold">${type}</span>
-                    <div class="mt-2 md:mt-0 md:space-x-4 flex flex-col md:flex-row">
-                        <span class="text-sm text-gray-500">Bevétel: <span class="text-green-600 font-medium">${income.toLocaleString('hu-HU')} Ft</span></span>
-                        <span class="text-sm text-gray-500">Kiadás: <span class="text-red-600 font-medium">${expense.toLocaleString('hu-HU')} Ft</span></span>
-                        <span class="text-md font-bold ${balanceColor}">Egyenleg: ${balance.toLocaleString('hu-HU')} Ft</span>
-                    </div>
-                `;
-                invoiceSummaryEl.appendChild(listItem);
+        // Logout
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Kijelentkezési hiba:", error);
             }
-        }
+        });
 
-
-        async function addTransaction(event) {
-            event.preventDefault();
-            if (!userAuthReady) {
-                showModal('A rendszer még nem készült fel. Kérlek, próbáld újra egy pillanat múlva.');
-                return;
-            }
-
-            const date = document.getElementById('date').value;
-            const description = document.getElementById('description').value;
-            const amount = parseFloat(document.getElementById('amount').value);
-            const businessArea = document.getElementById('business-area').value;
-            const paymentMethod = document.getElementById('payment-method').value;
-            const type = document.querySelector('input[name="transaction-type"]:checked').value;
-            const invoiced = document.getElementById('invoice-checkbox').checked;
-
-            if (amount <= 0 || isNaN(amount)) {
-                showModal('Kérlek, érvényes összeget adj meg!');
+        // Transaction form submission
+        transactionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUserId) {
+                showMessage("Nincs bejelentkezett felhasználó. Kérlek, jelentkezz be.");
                 return;
             }
 
             const newTransaction = {
-                date,
-                description,
-                amount,
-                businessArea,
-                paymentMethod,
-                type,
-                invoiced,
-                timestamp: new Date()
+                date: document.getElementById('date').value,
+                description: document.getElementById('description').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                businessArea: document.getElementById('business-area').value,
+                paymentMethod: document.getElementById('payment-method').value,
+                type: document.querySelector('input[name="transaction-type"]:checked').value,
+                invoiced: document.getElementById('invoiced').checked,
+                createdAt: new Date()
             };
 
             try {
-                await addDoc(transactionsCollection, newTransaction);
+                await addDoc(collection(db, `/artifacts/${appId}/users/${currentUserId}/transactions`), newTransaction);
                 transactionForm.reset();
-            } catch (e) {
-                console.error("Hiba a tranzakció hozzáadásakor: ", e);
-                showModal('Hiba történt a tranzakció mentésekor. Kérlek, próbáld újra.');
+                document.getElementById('date').valueAsDate = new Date();
+            } catch (error) {
+                console.error("Hiba a tranzakció hozzáadásakor:", error);
+                showMessage("Hiba a tranzakció hozzáadásakor. Kérlek, ellenőrizd a beállításokat.");
             }
-        }
+        });
 
-        async function deleteTransaction(transactionId) {
-            if (!userAuthReady) return;
+        // Clear all transactions
+        clearAllBtn.addEventListener('click', async () => {
+            confirmMessage.textContent = "Biztosan törölni szeretnéd az összes tranzakciót? Ez a művelet nem vonható vissza!";
+            confirmOkBtn.textContent = "Törlés";
+            confirmModal.classList.remove('hidden');
 
-            showModal('Biztosan törölni szeretnéd ezt a tranzakciót?', async () => {
+            confirmOkBtn.onclick = async () => {
                 try {
-                    await deleteDoc(doc(db, transactionsCollection.path, transactionId));
-                } catch (e) {
-                    console.error("Hiba a tranzakció törlésekor: ", e);
-                    showModal('Hiba történt a tranzakció törlésekor. Kérlek, próbáld újra.');
+                    const q = query(collection(db, `/artifacts/${appId}/users/${currentUserId}/transactions`));
+                    const querySnapshot = await getDocs(q);
+                    const batch = writeBatch(db);
+                    querySnapshot.forEach((doc) => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                    confirmModal.classList.add('hidden');
+                } catch (error) {
+                    console.error("Hiba az összes adat törlésekor:", error);
+                    confirmModal.classList.add('hidden');
                 }
-            });
-        }
+            };
+            confirmCancelBtn.onclick = () => {
+                confirmModal.classList.add('hidden');
+            };
+        });
 
-        async function clearAllData() {
-            if (!userAuthReady) return;
-
-            showModal('Biztosan törölni szeretnéd az összes tranzakciót?', async () => {
-                try {
-                    const querySnapshot = await getDocs(transactionsCollection);
-                    const deletePromises = querySnapshot.docs.map(d => deleteDoc(d.ref));
-                    await Promise.all(deletePromises);
-                } catch (e) {
-                    console.error("Hiba az összes adat törlésekor: ", e);
-                    showModal('Hiba történt az összes adat törlésekor. Kérlek, próbáld újra.');
-                }
-            });
-        }
-
-        // Expose functions to the global scope for button clicks
-        window.deleteTransaction = deleteTransaction;
-
-        transactionForm.addEventListener('submit', addTransaction);
-        clearAllBtn.addEventListener('click', clearAllData);
-        
-        window.onload = function() {
-            initFirebase();
-        };
+        // Set initial date
+        document.getElementById('date').valueAsDate = new Date();
     </script>
 </body>
 </html>

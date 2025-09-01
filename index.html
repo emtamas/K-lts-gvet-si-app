@@ -529,9 +529,9 @@
                 if (isLoginMode) {
                     await signInWithEmailAndPassword(auth, email, password);
                 } else {
-                    await createUserWithEmailAndPassword(auth, email, password);
-                    // Sikeres regisztráció után a Firebase automatikusan belépteti a felhasználót,
-                    // így az onAuthStateChanged listener fogja kezelni a showApp() hívást.
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    // Sikeres regisztráció után azonnal beléptetjük a felhasználót
+                    showApp(userCredential.user);
                 }
             } catch (error) {
                 console.error("Auth hiba:", error);

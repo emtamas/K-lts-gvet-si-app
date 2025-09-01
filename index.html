@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vállalkozási Költségvetés</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -85,6 +86,51 @@
                     <span id="user-email" class="text-sm font-bold text-gray-700">Betöltés...</span>
                 </div>
                 <button id="logout-btn" class="mt-2 md:mt-0 btn bg-red-500 text-white hover:bg-red-600 text-sm py-1 px-3">Kijelentkezés</button>
+            </div>
+        </div>
+
+        <!-- Monthly Report Section -->
+        <div class="card">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Havi Kimutatás</h2>
+            <div class="flex flex-wrap items-center justify-center space-x-4 mb-6">
+                <div class="flex flex-col">
+                    <label for="month-select" class="text-sm font-medium text-gray-700">Hónap</label>
+                    <select id="month-select" class="mt-1 block rounded-md border-gray-300 shadow-sm p-2">
+                        <option value="1">Január</option>
+                        <option value="2">Február</option>
+                        <option value="3">Március</option>
+                        <option value="4">Április</option>
+                        <option value="5">Május</option>
+                        <option value="6">Június</option>
+                        <option value="7">Július</option>
+                        <option value="8">Augusztus</option>
+                        <option value="9">Szeptember</option>
+                        <option value="10">Október</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+                <div class="flex flex-col">
+                    <label for="year-select" class="text-sm font-medium text-gray-700">Év</label>
+                    <select id="year-select" class="mt-1 block rounded-md border-gray-300 shadow-sm p-2"></select>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center mb-6">
+                <div class="flex flex-col items-center">
+                    <span class="text-sm font-semibold text-gray-500">Havi Bevétel</span>
+                    <span id="monthly-income" class="text-2xl font-bold text-green-600 mt-1">0 Ft</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span class="text-sm font-semibold text-gray-500">Havi Kiadás</span>
+                    <span id="monthly-expense" class="text-2xl font-bold text-red-600 mt-1">0 Ft</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span class="text-sm font-semibold text-gray-500">Havi Egyenleg</span>
+                    <span id="monthly-balance" class="text-2xl font-bold text-blue-600 mt-1">0 Ft</span>
+                </div>
+            </div>
+            <div id="chart-container" class="mt-8" style="max-height: 400px;">
+                <canvas id="monthlyChart"></canvas>
             </div>
         </div>
 
@@ -214,17 +260,10 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, doc, deleteDoc, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase konfiguráció
-        const firebaseConfig = {
-            apiKey: "AIzaSyDNIjjqn3U954Liv_Uevb_98kBI7yz9_Mk",
-            authDomain: "vallalkozasi-koltsegvetes-app.firebaseapp.com",
-            projectId: "vallalkozasi-koltsegvetes-app",
-            storageBucket: "vallalkozasi-koltsegvetes-app.firebasestorage.app",
-            messagingSenderId: "957517210915",
-            appId: "1:957517210915:web:9811f265ee72d4e1381896"
-        };
+        const firebaseConfig = JSON.parse(__firebase_config);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseApp = initializeApp(firebaseConfig);
         const auth = getAuth(firebaseApp);
@@ -253,6 +292,12 @@
         const totalNotInvoicedSpan = document.getElementById('total-not-invoiced');
         const clearAllBtn = document.getElementById('clear-all');
 
+        const monthSelect = document.getElementById('month-select');
+        const yearSelect = document.getElementById('year-select');
+        const monthlyIncomeSpan = document.getElementById('monthly-income');
+        const monthlyExpenseSpan = document.getElementById('monthly-expense');
+        const monthlyBalanceSpan = document.getElementById('monthly-balance');
+
         const confirmModal = document.getElementById('confirm-modal');
         const confirmMessage = document.getElementById('confirm-message');
         const confirmCancelBtn = document.getElementById('confirm-cancel');
@@ -261,6 +306,74 @@
         let isLoginMode = true;
         let unsubscribeFromTransactions = null;
         let currentUserId = null;
+        let allTransactions = [];
+        let myChart;
+
+        // Chart.js init
+        const setupChart = () => {
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Bevétel', 'Kiadás'],
+                    datasets: [{
+                        label: 'Összeg (Ft)',
+                        data: [0, 0],
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.5)', // Tailwind green-500
+                            'rgba(239, 68, 68, 0.5)' // Tailwind red-500
+                        ],
+                        borderColor: [
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(239, 68, 68, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        };
+
+        const updateChart = (income, expense) => {
+            if (myChart) {
+                myChart.data.datasets[0].data = [income, expense];
+                myChart.update();
+            }
+        };
+
+        const filterAndRenderData = () => {
+            const selectedMonth = parseInt(monthSelect.value);
+            const selectedYear = parseInt(yearSelect.value);
+            let monthlyIncome = 0;
+            let monthlyExpense = 0;
+
+            const filteredTransactions = allTransactions.filter(t => {
+                const transactionDate = new Date(t.date);
+                return transactionDate.getFullYear() === selectedYear && (transactionDate.getMonth() + 1) === selectedMonth;
+            });
+
+            filteredTransactions.forEach(t => {
+                if (t.type === 'income') {
+                    monthlyIncome += t.amount;
+                } else {
+                    monthlyExpense += t.amount;
+                }
+            });
+
+            monthlyIncomeSpan.textContent = `${monthlyIncome.toLocaleString('hu-HU')} Ft`;
+            monthlyExpenseSpan.textContent = `${monthlyExpense.toLocaleString('hu-HU')} Ft`;
+            monthlyBalanceSpan.textContent = `${(monthlyIncome - monthlyExpense).toLocaleString('hu-HU')} Ft`;
+
+            updateChart(monthlyIncome, monthlyExpense);
+        };
 
         const showMessage = (message, isError = true) => {
             authMessage.textContent = message;
@@ -279,6 +392,24 @@
                 unsubscribeFromTransactions();
             }
 
+            // Populate year selector
+            const currentYear = new Date().getFullYear();
+            for (let i = currentYear - 5; i <= currentYear + 5; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                yearSelect.appendChild(option);
+            }
+            yearSelect.value = currentYear;
+            monthSelect.value = new Date().getMonth() + 1;
+
+            // Setup the chart initially
+            setupChart();
+
+            // Event listeners for month/year change
+            monthSelect.addEventListener('change', filterAndRenderData);
+            yearSelect.addEventListener('change', filterAndRenderData);
+
             const q = query(
                 collection(db, `/artifacts/${appId}/users/${currentUserId}/transactions`)
             );
@@ -289,6 +420,7 @@
                 let totalInvoiced = 0;
                 let totalNotInvoiced = 0;
                 transactionList.innerHTML = '';
+                allTransactions = [];
                 
                 if (querySnapshot.empty) {
                     const row = document.createElement('tr');
@@ -297,6 +429,7 @@
                 } else {
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
+                        allTransactions.push(data);
                         const amount = parseFloat(data.amount);
                         
                         if (data.type === 'income') {
@@ -334,12 +467,16 @@
                 balanceSpan.textContent = `${(totalIncome - totalExpense).toLocaleString('hu-HU')} Ft`;
                 totalInvoicedSpan.textContent = `${totalInvoiced.toLocaleString('hu-HU')} Ft`;
                 totalNotInvoicedSpan.textContent = `${totalNotInvoiced.toLocaleString('hu-HU')} Ft`;
+                
+                // Rerender monthly report on data change
+                filterAndRenderData();
 
                 // Add event listeners to delete buttons
                 document.querySelectorAll('.delete-btn').forEach(button => {
                     button.addEventListener('click', async (e) => {
                         const docId = e.target.dataset.id;
                         confirmMessage.textContent = "Biztosan törölni szeretnéd ezt a tranzakciót?";
+                        confirmOkBtn.textContent = "Törlés";
                         confirmModal.classList.remove('hidden');
                         confirmOkBtn.onclick = async () => {
                             try {
@@ -368,7 +505,7 @@
         };
 
         // Auth state listener
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 showApp(user);
             } else {
@@ -400,9 +537,9 @@
                 let message = "Hiba történt. Kérlek, próbáld újra.";
                 if (error.code === 'auth/invalid-email') {
                     message = "Hibás email cím.";
-                } else if (error.code === 'auth/user-not-found') {
-                    message = "A felhasználó nem található.";
-                } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                } else if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                    message = "A felhasználó nem található vagy a jelszó hibás.";
+                } else if (error.code === 'auth/wrong-password') {
                     message = "Hibás jelszó.";
                 } else if (error.code === 'auth/email-already-in-use') {
                     message = "Az email cím már használatban van.";

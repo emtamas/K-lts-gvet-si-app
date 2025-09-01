@@ -530,23 +530,18 @@
                     await signInWithEmailAndPassword(auth, email, password);
                 } else {
                     await createUserWithEmailAndPassword(auth, email, password);
-                    showMessage('Sikeres regisztráció! Jelentkezz be.', false);
-                    isLoginMode = true;
-                    authTitle.textContent = "Bejelentkezés";
-                    authSubmitBtn.textContent = "Bejelentkezés";
-                    toggleAuthBtn.textContent = "Még nincs fiókom, regisztrálok";
+                    // Sikeres regisztráció után a Firebase automatikusan belépteti a felhasználót,
+                    // így az onAuthStateChanged listener fogja kezelni a showApp() hívást.
                 }
             } catch (error) {
                 console.error("Auth hiba:", error);
                 let message = "Hiba történt. Kérlek, próbáld újra.";
                 if (error.code === 'auth/invalid-email') {
                     message = "Hibás email cím.";
-                } else if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                    message = "A felhasználó nem található vagy a jelszó hibás.";
-                } else if (error.code === 'auth/wrong-password') {
-                    message = "Hibás jelszó.";
+                } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    message = "A megadott email cím vagy jelszó helytelen. Kérlek, próbáld újra.";
                 } else if (error.code === 'auth/email-already-in-use') {
-                    message = "Az email cím már használatban van.";
+                    message = "Ez az email cím már használatban van.";
                 } else if (error.code === 'auth/weak-password') {
                     message = "A jelszónak legalább 6 karakter hosszúnak kell lennie.";
                 }

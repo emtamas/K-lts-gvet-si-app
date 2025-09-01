@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vállalkozási Költségvetés</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -45,9 +44,13 @@
     </style>
 </head>
 <body class="bg-gray-100 p-8 flex items-center justify-center min-h-screen">
+    <div id="loading-screen" class="text-center">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+        <p class="mt-4 text-gray-600">Betöltés...</p>
+    </div>
 
     <!-- Login/Registration form -->
-    <div id="auth-container" class="w-full max-w-sm">
+    <div id="auth-container" class="w-full max-w-sm hidden">
         <div class="card p-8 space-y-4">
             <h2 id="auth-title" class="text-2xl font-bold text-center text-gray-800">Bejelentkezés</h2>
             <form id="auth-form" class="space-y-4">
@@ -82,51 +85,6 @@
                     <span id="user-email" class="text-sm font-bold text-gray-700">Betöltés...</span>
                 </div>
                 <button id="logout-btn" class="mt-2 md:mt-0 btn bg-red-500 text-white hover:bg-red-600 text-sm py-1 px-3">Kijelentkezés</button>
-            </div>
-        </div>
-
-        <!-- Monthly Report Section -->
-        <div class="card">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Havi Kimutatás</h2>
-            <div class="flex flex-wrap items-center justify-center space-x-4 mb-6">
-                <div class="flex flex-col">
-                    <label for="month-select" class="text-sm font-medium text-gray-700">Hónap</label>
-                    <select id="month-select" class="mt-1 block rounded-md border-gray-300 shadow-sm p-2">
-                        <option value="1">Január</option>
-                        <option value="2">Február</option>
-                        <option value="3">Március</option>
-                        <option value="4">Április</option>
-                        <option value="5">Május</option>
-                        <option value="6">Június</option>
-                        <option value="7">Július</option>
-                        <option value="8">Augusztus</option>
-                        <option value="9">Szeptember</option>
-                        <option value="10">Október</option>
-                        <option value="11">November</option>
-                        <option value="12">December</option>
-                    </select>
-                </div>
-                <div class="flex flex-col">
-                    <label for="year-select" class="text-sm font-medium text-gray-700">Év</label>
-                    <select id="year-select" class="mt-1 block rounded-md border-gray-300 shadow-sm p-2"></select>
-                </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center mb-6">
-                <div class="flex flex-col items-center">
-                    <span class="text-sm font-semibold text-gray-500">Havi Bevétel</span>
-                    <span id="monthly-income" class="text-2xl font-bold text-green-600 mt-1">0 Ft</span>
-                </div>
-                <div class="flex flex-col items-center">
-                    <span class="text-sm font-semibold text-gray-500">Havi Kiadás</span>
-                    <span id="monthly-expense" class="text-2xl font-bold text-red-600 mt-1">0 Ft</span>
-                </div>
-                <div class="flex flex-col items-center">
-                    <span class="text-sm font-semibold text-gray-500">Havi Egyenleg</span>
-                    <span id="monthly-balance" class="text-2xl font-bold text-blue-600 mt-1">0 Ft</span>
-                </div>
-            </div>
-            <div id="chart-container" class="mt-8" style="max-height: 400px;">
-                <canvas id="monthlyChart"></canvas>
             </div>
         </div>
 
@@ -256,18 +214,24 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, doc, deleteDoc, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase-konfiguráció és inicializálás
-        setLogLevel('debug');
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // Firebase konfiguráció
+        const firebaseConfig = {
+            apiKey: "AIzaSyDNIjjqn3U954Liv_Uevb_98kBI7yz9_Mk",
+            authDomain: "vallalkozasi-koltsegvetes-app.firebaseapp.com",
+            projectId: "vallalkozasi-koltsegvetes-app",
+            storageBucket: "vallalkozasi-koltsegvetes-app.firebasestorage.app",
+            messagingSenderId: "957517210915",
+            appId: "1:957517210915:web:9811f265ee72d4e1381896"
+        };
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseApp = initializeApp(firebaseConfig);
         const auth = getAuth(firebaseApp);
         const db = getFirestore(firebaseApp);
 
         // UI elemek
+        const loadingScreen = document.getElementById('loading-screen');
         const authContainer = document.getElementById('auth-container');
         const appContainer = document.getElementById('app-container');
         const authForm = document.getElementById('auth-form');
@@ -289,12 +253,6 @@
         const totalNotInvoicedSpan = document.getElementById('total-not-invoiced');
         const clearAllBtn = document.getElementById('clear-all');
 
-        const monthSelect = document.getElementById('month-select');
-        const yearSelect = document.getElementById('year-select');
-        const monthlyIncomeSpan = document.getElementById('monthly-income');
-        const monthlyExpenseSpan = document.getElementById('monthly-expense');
-        const monthlyBalanceSpan = document.getElementById('monthly-balance');
-
         const confirmModal = document.getElementById('confirm-modal');
         const confirmMessage = document.getElementById('confirm-message');
         const confirmCancelBtn = document.getElementById('confirm-cancel');
@@ -303,74 +261,6 @@
         let isLoginMode = true;
         let unsubscribeFromTransactions = null;
         let currentUserId = null;
-        let allTransactions = [];
-        let myChart;
-
-        // Chart.js inicializálása
-        const setupChart = () => {
-            const ctx = document.getElementById('monthlyChart').getContext('2d');
-            myChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Bevétel', 'Kiadás'],
-                    datasets: [{
-                        label: 'Összeg (Ft)',
-                        data: [0, 0],
-                        backgroundColor: [
-                            'rgba(16, 185, 129, 0.5)', 
-                            'rgba(239, 68, 68, 0.5)'
-                        ],
-                        borderColor: [
-                            'rgba(16, 185, 129, 1)',
-                            'rgba(239, 68, 68, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        };
-
-        const updateChart = (income, expense) => {
-            if (myChart) {
-                myChart.data.datasets[0].data = [income, expense];
-                myChart.update();
-            }
-        };
-
-        const filterAndRenderData = () => {
-            const selectedMonth = parseInt(monthSelect.value);
-            const selectedYear = parseInt(yearSelect.value);
-            let monthlyIncome = 0;
-            let monthlyExpense = 0;
-
-            const filteredTransactions = allTransactions.filter(t => {
-                const transactionDate = new Date(t.date);
-                return transactionDate.getFullYear() === selectedYear && (transactionDate.getMonth() + 1) === selectedMonth;
-            });
-
-            filteredTransactions.forEach(t => {
-                if (t.type === 'income') {
-                    monthlyIncome += t.amount;
-                } else {
-                    monthlyExpense += t.amount;
-                }
-            });
-
-            monthlyIncomeSpan.textContent = `${monthlyIncome.toLocaleString('hu-HU')} Ft`;
-            monthlyExpenseSpan.textContent = `${monthlyExpense.toLocaleString('hu-HU')} Ft`;
-            monthlyBalanceSpan.textContent = `${(monthlyIncome - monthlyExpense).toLocaleString('hu-HU')} Ft`;
-
-            updateChart(monthlyIncome, monthlyExpense);
-        };
 
         const showMessage = (message, isError = true) => {
             authMessage.textContent = message;
@@ -379,6 +269,7 @@
         };
 
         const showApp = (user) => {
+            loadingScreen.classList.add('hidden');
             authContainer.classList.add('hidden');
             appContainer.classList.remove('hidden');
             userIdSpan.textContent = user.email;
@@ -387,25 +278,6 @@
             if (unsubscribeFromTransactions) {
                 unsubscribeFromTransactions();
             }
-
-            // Év kiválasztó feltöltése
-            const currentYear = new Date().getFullYear();
-            yearSelect.innerHTML = '';
-            for (let i = currentYear - 5; i <= currentYear + 5; i++) {
-                const option = document.createElement('option');
-                option.value = i;
-                option.textContent = i;
-                yearSelect.appendChild(option);
-            }
-            yearSelect.value = currentYear;
-            monthSelect.value = new Date().getMonth() + 1;
-
-            // Chart beállítása
-            setupChart();
-
-            // Eseményfigyelők
-            monthSelect.addEventListener('change', filterAndRenderData);
-            yearSelect.addEventListener('change', filterAndRenderData);
 
             const q = query(
                 collection(db, `/artifacts/${appId}/users/${currentUserId}/transactions`)
@@ -417,7 +289,6 @@
                 let totalInvoiced = 0;
                 let totalNotInvoiced = 0;
                 transactionList.innerHTML = '';
-                allTransactions = [];
                 
                 if (querySnapshot.empty) {
                     const row = document.createElement('tr');
@@ -426,7 +297,6 @@
                 } else {
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
-                        allTransactions.push(data);
                         const amount = parseFloat(data.amount);
                         
                         if (data.type === 'income') {
@@ -436,17 +306,9 @@
                         }
 
                         if (data.invoiced) {
-                            if (data.type === 'income') {
-                                totalInvoiced += amount;
-                            } else {
-                                totalInvoiced -= amount;
-                            }
+                            totalInvoiced += amount;
                         } else {
-                            if (data.type === 'income') {
-                                totalNotInvoiced += amount;
-                            } else {
-                                totalNotInvoiced -= amount;
-                            }
+                            totalNotInvoiced += amount;
                         }
                         
                         const row = document.createElement('tr');
@@ -472,16 +334,12 @@
                 balanceSpan.textContent = `${(totalIncome - totalExpense).toLocaleString('hu-HU')} Ft`;
                 totalInvoicedSpan.textContent = `${totalInvoiced.toLocaleString('hu-HU')} Ft`;
                 totalNotInvoicedSpan.textContent = `${totalNotInvoiced.toLocaleString('hu-HU')} Ft`;
-                
-                // Havi kimutatás frissítése
-                filterAndRenderData();
 
-                // Törlés gombok eseményfigyelői
+                // Add event listeners to delete buttons
                 document.querySelectorAll('.delete-btn').forEach(button => {
                     button.addEventListener('click', async (e) => {
                         const docId = e.target.dataset.id;
                         confirmMessage.textContent = "Biztosan törölni szeretnéd ezt a tranzakciót?";
-                        confirmOkBtn.textContent = "Törlés";
                         confirmModal.classList.remove('hidden');
                         confirmOkBtn.onclick = async () => {
                             try {
@@ -504,12 +362,13 @@
         };
 
         const showAuth = () => {
+            loadingScreen.classList.add('hidden');
             appContainer.classList.add('hidden');
             authContainer.classList.remove('hidden');
         };
 
-        // Belépési állapot figyelése
-        onAuthStateChanged(auth, async (user) => {
+        // Auth state listener
+        onAuthStateChanged(auth, (user) => {
             if (user) {
                 showApp(user);
             } else {
@@ -517,7 +376,7 @@
             }
         });
 
-        // Autentikációs űrlap
+        // Auth form submission
         authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = emailInput.value;
@@ -529,19 +388,24 @@
                 if (isLoginMode) {
                     await signInWithEmailAndPassword(auth, email, password);
                 } else {
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    // Sikeres regisztráció után azonnal beléptetjük a felhasználót
-                    showApp(userCredential.user);
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    showMessage('Sikeres regisztráció! Jelentkezz be.', false);
+                    isLoginMode = true;
+                    authTitle.textContent = "Bejelentkezés";
+                    authSubmitBtn.textContent = "Bejelentkezés";
+                    toggleAuthBtn.textContent = "Még nincs fiókom, regisztrálok";
                 }
             } catch (error) {
                 console.error("Auth hiba:", error);
                 let message = "Hiba történt. Kérlek, próbáld újra.";
                 if (error.code === 'auth/invalid-email') {
                     message = "Hibás email cím.";
-                } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                    message = "A megadott email cím vagy jelszó helytelen. Kérlek, próbáld újra.";
+                } else if (error.code === 'auth/user-not-found') {
+                    message = "A felhasználó nem található.";
+                } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    message = "Hibás jelszó.";
                 } else if (error.code === 'auth/email-already-in-use') {
-                    message = "Ez az email cím már használatban van.";
+                    message = "Az email cím már használatban van.";
                 } else if (error.code === 'auth/weak-password') {
                     message = "A jelszónak legalább 6 karakter hosszúnak kell lennie.";
                 }
@@ -551,7 +415,7 @@
             }
         });
 
-        // Váltás bejelentkezés és regisztráció között
+        // Toggle login/registration mode
         toggleAuthBtn.addEventListener('click', () => {
             isLoginMode = !isLoginMode;
             if (isLoginMode) {
@@ -566,7 +430,7 @@
             authMessage.classList.add('hidden');
         });
 
-        // Kijelentkezés
+        // Logout
         logoutBtn.addEventListener('click', async () => {
             try {
                 await signOut(auth);
@@ -575,7 +439,7 @@
             }
         });
 
-        // Tranzakció űrlap
+        // Transaction form submission
         transactionForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUserId) {
@@ -604,7 +468,7 @@
             }
         });
 
-        // Összes tranzakció törlése
+        // Clear all transactions
         clearAllBtn.addEventListener('click', async () => {
             confirmMessage.textContent = "Biztosan törölni szeretnéd az összes tranzakciót? Ez a művelet nem vonható vissza!";
             confirmOkBtn.textContent = "Törlés";
@@ -630,8 +494,9 @@
             };
         });
 
-        // Kezdő dátum beállítása
+        // Set initial date
         document.getElementById('date').valueAsDate = new Date();
     </script>
 </body>
 </html>
+

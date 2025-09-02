@@ -47,6 +47,17 @@
         <header class="text-center mb-12">
             <h1 class="text-4xl font-bold text-gray-800">Vállalkozási Költségvetés</h1>
         </header>
+        <!-- Mód-szalag -->
+        <div id="mode-banner" class="hidden mb-4">
+            <div class="card p-4 flex items-center justify-between bg-yellow-50">
+                <div class="text-sm text-gray-700">
+                    <strong>Demó (előnézet) mód</strong> – jelenleg minta adatok látszanak.
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="switch-to-live" class="btn bg-indigo-600 text-white hover:bg-indigo-700 text-sm">Átváltás élő módra</button>
+                </div>
+            </div>
+        </div>
 
         <!-- User Info -->
         <div class="card p-4 text-center">
@@ -199,9 +210,6 @@
     </div>
 
     <script type="module">
-        // --- Canvas/előnézet kompatibilitás ---
-        const PREVIEW = !['localhost','127.0.0.1','vallalkozasi-koltsegvetes-app.web.app','vallalkozasi-koltsegvetes-app.firebaseapp.com'].includes(location.hostname);
-
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import {
@@ -217,7 +225,27 @@
             serverTimestamp
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase konfiguráció (ha nem engedélyezett a domain, előnézet mód indul)
+        // --- Domain / mód felismerés + manuális felülbírálás ---
+        const url = new URL(location.href);
+        const forcePreview = url.searchParams.get('preview') === '1';
+        const forceLive = url.searchParams.get('live') === '1' || localStorage.getItem('forceLive') === '1';
+
+        const ALLOWED = [
+            'localhost',
+            '127.0.0.1',
+            'vallalkozasi-koltsegvetes-app.web.app',
+            'vallalkozasi-koltsegvetes-app.firebaseapp.com'
+            // Itt egészítsd ki a saját GitHub Pages / custom domain hostnévvel!
+            // pl.: 'marton-tamas.github.io', 'montyallatpanzio.hu'
+        ];
+        const isAllowed = ALLOWED.includes(location.hostname)
+            || location.hostname.endsWith('.github.io')
+            || location.hostname.endsWith('web.app')
+            || location.hostname.endsWith('firebaseapp.com');
+
+        const PREVIEW = forcePreview ? true : (forceLive ? false : !isAllowed);
+
+        // Firebase konfiguráció
         const firebaseConfig = {
             apiKey: "AIzaSyDNIjjqn3U954Liv_Uevb_98kBI7yz9_Mk",
             authDomain: "vallalkozasi-koltsegvetes-app.firebaseapp.com",
@@ -245,6 +273,8 @@
         const authMessage = document.getElementById('auth-message');
         const logoutBtn = document.getElementById('logout-btn');
         const userIdSpan = document.getElementById('user-email');
+        const switchToLiveBtn = document.getElementById('switch-to-live');
+        const modeBanner = document.getElementById('mode-banner');
 
         const transactionForm = document.getElementById('transaction-form');
         const transactionList = document.getElementById('transaction-list');
@@ -264,15 +294,48 @@
         let unsubscribeFromTransactions = null;
         let currentUserId = null;
 
+        const showMessage = (message, isError = true) => {
+            authMessage.textContent = message;
+            authMessage.style.color = isError ? 'red' : 'green';
+            authMessage.classList.remove('hidden');
+        };
+
+        function toYM(dateStr){
+            const d = dateStr ? new Date(dateStr) : null;
+            if (!d || isNaN(d)) return 'Ismeretlen';
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        }
+
+        function renderMonthlyTable(monthly){
+            const monthlyTable = document.getElementById('monthly-table');
+            if (!monthlyTable) return;
+            monthlyTable.innerHTML = '';
+            const months = Array.from(monthly.keys()).sort().reverse();
+            months.forEach((ym) => {
+                const { income, expense } = monthly.get(ym);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-3 text-sm text-gray-700">${ym}</td>
+                    <td class="px-6 py-3 text-sm text-green-700">${income.toLocaleString('hu-HU')} Ft</td>
+                    <td class="px-6 py-3 text-sm text-red-700">${expense.toLocaleString('hu-HU')} Ft</td>
+                    <td class="px-6 py-3 text-sm font-semibold">${(income - expense).toLocaleString('hu-HU')} Ft</td>`;
+                monthlyTable.appendChild(tr);
+            });
+        }
+
         // --- Preview mód: Firebase nélkül demó adatokkal ---
         function runPreviewDemo() {
-            // Előnézet UI megjelenítése
+            modeBanner.classList.remove('hidden');
+            switchToLiveBtn.addEventListener('click', () => {
+                localStorage.setItem('forceLive', '1');
+                location.href = location.pathname + '?live=1';
+            });
+
             loadingScreen.classList.add('hidden');
             authContainer.classList.add('hidden');
             appContainer.classList.remove('hidden');
             userIdSpan.textContent = 'preview@local.test';
 
-            // Demó tranzakciók (augusztus, szeptember)
             const demo = [
                 { date: '2025-08-12', businessArea: 'Webshop', description: 'Rendelés #A123', amount: 42000, paymentMethod: 'Barion', invoiced: true, type: 'income' },
                 { date: '2025-08-13', businessArea: 'Állatpanzió', description: 'Takarmány', amount: 15000, paymentMethod: 'Utalás', invoiced: false, type: 'expense' },
@@ -285,14 +348,13 @@
             const monthly = new Map();
             transactionList.innerHTML = '';
 
-            demo.forEach((d, idx) => {
+            demo.forEach((d) => {
                 const amount = Number(d.amount) || 0;
                 const isIncome = d.type === 'income';
                 if (isIncome) totalIncome += amount; else totalExpense += amount;
                 if (d.invoiced) totalInvoicedNet += isIncome ? amount : -amount; else totalNotInvoicedNet += isIncome ? amount : -amount;
 
-                const dt = new Date(d.date);
-                const ym = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+                const ym = toYM(d.date);
                 if (!monthly.has(ym)) monthly.set(ym, { income: 0, expense: 0 });
                 const b = monthly.get(ym);
                 if (isIncome) b.income += amount; else b.expense += amount;
@@ -308,7 +370,7 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${d.invoiced ? '✅' : '❌'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${isIncome ? 'Bevétel' : 'Kiadás'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button disabled class="opacity-40 cursor-not-allowed">Törlés</button>
+                        <button class="opacity-40 cursor-not-allowed" disabled>Törlés</button>
                     </td>`;
                 transactionList.appendChild(row);
             });
@@ -318,35 +380,8 @@
             balanceSpan.textContent = `${(totalIncome - totalExpense).toLocaleString('hu-HU')} Ft`;
             totalInvoicedSpan.textContent = `${totalInvoicedNet.toLocaleString('hu-HU')} Ft`;
             totalNotInvoicedSpan.textContent = `${totalNotInvoicedNet.toLocaleString('hu-HU')} Ft`;
-
-            const monthlyTable = document.getElementById('monthly-table');
-            if (monthlyTable) {
-                monthlyTable.innerHTML = '';
-                const months = Array.from(monthly.keys()).sort().reverse();
-                months.forEach((ym) => {
-                    const { income, expense } = monthly.get(ym);
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="px-6 py-3 text-sm text-gray-700">${ym}</td>
-                        <td class="px-6 py-3 text-sm text-green-700">${income.toLocaleString('hu-HU')} Ft</td>
-                        <td class="px-6 py-3 text-sm text-red-700">${expense.toLocaleString('hu-HU')} Ft</td>
-                        <td class="px-6 py-3 text-sm font-semibold">${(income - expense).toLocaleString('hu-HU')} Ft</td>`;
-                    monthlyTable.appendChild(tr);
-                });
-            }
-
-            // Formok letiltása előnézetben
-            authForm.querySelectorAll('input,button').forEach(el => el.disabled = true);
-            transactionForm.querySelectorAll('input,select,button').forEach(el => el.disabled = true);
-            clearAllBtn.disabled = true;
-            logoutBtn.disabled = true;
+            renderMonthlyTable(monthly);
         }
-
-        const showMessage = (message, isError = true) => {
-            authMessage.textContent = message;
-            authMessage.style.color = isError ? 'red' : 'green';
-            authMessage.classList.remove('hidden');
-        };
 
         const showApp = (user) => {
             loadingScreen.classList.add('hidden');
@@ -358,13 +393,12 @@
             if (unsubscribeFromTransactions) unsubscribeFromTransactions();
 
             const qRef = query(collection(db, `artifacts/${appId}/users/${currentUserId}/transactions`));
-
             unsubscribeFromTransactions = onSnapshot(qRef, (querySnapshot) => {
                 let totalIncome = 0;
                 let totalExpense = 0;
-                let totalInvoicedNet = 0; // Számlás nettó (bevétel-kiadás)
-                let totalNotInvoicedNet = 0; // Nem számlás nettó (bevétel-kiadás)
-                const monthly = new Map(); // key: YYYY-MM, value: {income, expense}
+                let totalInvoicedNet = 0;
+                let totalNotInvoicedNet = 0;
+                const monthly = new Map();
                 transactionList.innerHTML = '';
 
                 if (querySnapshot.empty) {
@@ -377,27 +411,14 @@
                         const amount = Number(data.amount) || 0;
                         const isIncome = data.type === 'income';
 
-                        // Összesítők
                         if (isIncome) totalIncome += amount; else totalExpense += amount;
-                        if (data.invoiced) {
-                            totalInvoicedNet += isIncome ? amount : -amount;
-                        } else {
-                            totalNotInvoicedNet += isIncome ? amount : -amount;
-                        }
+                        if (data.invoiced) totalInvoicedNet += isIncome ? amount : -amount; else totalNotInvoicedNet += isIncome ? amount : -amount;
 
-                        // Havi kimutatás
-                        const ym = (() => {
-                            const d = data.date ? new Date(data.date) : null;
-                            if (!d || isNaN(d)) return 'Ismeretlen';
-                            const y = d.getFullYear();
-                            const m = String(d.getMonth() + 1).padStart(2, '0');
-                            return `${y}-${m}`;
-                        })();
+                        const ym = toYM(data.date);
                         if (!monthly.has(ym)) monthly.set(ym, { income: 0, expense: 0 });
                         const bucket = monthly.get(ym);
                         if (isIncome) bucket.income += amount; else bucket.expense += amount;
 
-                        // Tábla sor
                         const row = document.createElement('tr');
                         row.className = isIncome ? 'bg-green-50' : 'bg-red-50';
                         row.innerHTML = `
@@ -415,31 +436,13 @@
                     });
                 }
 
-                // Főkártyák frissítése
                 totalIncomeSpan.textContent = `${totalIncome.toLocaleString('hu-HU')} Ft`;
                 totalExpenseSpan.textContent = `${totalExpense.toLocaleString('hu-HU')} Ft`;
                 balanceSpan.textContent = `${(totalIncome - totalExpense).toLocaleString('hu-HU')} Ft`;
                 totalInvoicedSpan.textContent = `${totalInvoicedNet.toLocaleString('hu-HU')} Ft`;
                 totalNotInvoicedSpan.textContent = `${totalNotInvoicedNet.toLocaleString('hu-HU')} Ft`;
+                renderMonthlyTable(monthly);
 
-                // Havi táblázat render
-                const monthlyTable = document.getElementById('monthly-table');
-                if (monthlyTable) {
-                    monthlyTable.innerHTML = '';
-                    const months = Array.from(monthly.keys()).sort().reverse();
-                    months.forEach((ym) => {
-                        const { income, expense } = monthly.get(ym);
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td class=\"px-6 py-3 text-sm text-gray-700\">${ym}</td>
-                            <td class=\"px-6 py-3 text-sm text-green-700\">${income.toLocaleString('hu-HU')} Ft</td>
-                            <td class=\"px-6 py-3 text-sm text-red-700\">${expense.toLocaleString('hu-HU')} Ft</td>
-                            <td class=\"px-6 py-3 text-sm font-semibold\">${(income - expense).toLocaleString('hu-HU')} Ft</td>`;
-                        monthlyTable.appendChild(tr);
-                    });
-                }
-
-                // Delete gombok eseménykezelői
                 document.querySelectorAll('.delete-btn').forEach((button) => {
                     button.addEventListener('click', async (e) => {
                         const docId = e.currentTarget.dataset.id;
@@ -580,7 +583,7 @@
             confirmCancelBtn.onclick = () => confirmModal.classList.add('hidden');
         });
 
-        // Initial date
+        // Kezdő dátum
         document.getElementById('date').valueAsDate = new Date();
     </script>
 </body>

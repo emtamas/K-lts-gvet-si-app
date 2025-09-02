@@ -1,46 +1,17 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vállalkozási Költségvetés</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8;
-        }
-        .container {
-            max-width: 1200px;
-        }
-        .card {
-            background-color: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 9999px;
-            font-weight: 600;
-            transition: background-color 0.2s;
-        }
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; }
+        .container { max-width: 1200px; }
+        .card { background-color: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn { padding: 0.75rem 1.5rem; border-radius: 9999px; font-weight: 600; transition: background-color 0.2s; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .modal { position: fixed; inset: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
     </style>
 </head>
 <body class="bg-gray-100 p-8 flex items-center justify-center min-h-screen">
@@ -49,18 +20,18 @@
         <p class="mt-4 text-gray-600">Betöltés...</p>
     </div>
 
-    <!-- Login/Registration form -->
+    <!-- Auth UI -->
     <div id="auth-container" class="w-full max-w-sm hidden">
         <div class="card p-8 space-y-4">
             <h2 id="auth-title" class="text-2xl font-bold text-center text-gray-800">Bejelentkezés</h2>
             <form id="auth-form" class="space-y-4">
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700">Email cím</label>
-                    <input type="email" id="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
+                    <input type="email" id="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required />
                 </div>
                 <div>
                     <label for="password" class="block text-sm font-medium text-gray-700">Jelszó</label>
-                    <input type="password" id="password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
+                    <input type="password" id="password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required />
                 </div>
                 <button type="submit" id="auth-submit-btn" class="w-full btn bg-indigo-600 text-white hover:bg-indigo-700">Bejelentkezés</button>
             </form>
@@ -71,7 +42,7 @@
         </div>
     </div>
 
-    <!-- Main App UI -->
+    <!-- App UI -->
     <div id="app-container" class="container mx-auto space-y-8 hidden">
         <header class="text-center mb-12">
             <h1 class="text-4xl font-bold text-gray-800">Vállalkozási Költségvetés</h1>
@@ -88,7 +59,7 @@
             </div>
         </div>
 
-        <!-- Költségvetési Összegző -->
+        <!-- Summary -->
         <div class="card p-6 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
             <div class="flex flex-col items-center">
                 <span class="text-sm font-semibold text-gray-500">Összes Bevétel</span>
@@ -105,31 +76,49 @@
         </div>
         <div class="card p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 text-center">
             <div class="flex flex-col items-center">
-                <span class="text-sm font-semibold text-gray-500">Számlás Tranzakciók</span>
+                <span class="text-sm font-semibold text-gray-500">Számlás Tranzakciók (nettó)</span>
                 <span id="total-invoiced" class="text-2xl font-bold text-gray-800 mt-1">0 Ft</span>
             </div>
             <div class="flex flex-col items-center">
-                <span class="text-sm font-semibold text-gray-500">Nem számlás Tranzakciók</span>
+                <span class="text-sm font-semibold text-gray-500">Nem számlás Tranzakciók (nettó)</span>
                 <span id="total-not-invoiced" class="text-2xl font-bold text-gray-800 mt-1">0 Ft</span>
             </div>
         </div>
 
-        <!-- Tranzakció Hozzáadása Form -->
+        <!-- Havi kimutatás -->
+        <div class="card">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Havi kimutatás</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hónap</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bevétel</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kiadás</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Egyenleg</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthly-table" class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- New Transaction -->
         <div class="card">
             <h2 class="text-2xl font-semibold text-gray-800 mb-4">Új Tranzakció Hozzáadása</h2>
             <form id="transaction-form" class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                         <label for="date" class="block text-sm font-medium text-gray-700">Dátum</label>
-                        <input type="date" id="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
+                        <input type="date" id="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required />
                     </div>
                     <div>
                         <label for="description" class="block text-sm font-medium text-gray-700">Leírás</label>
-                        <input type="text" id="description" placeholder="Pl. Takarmány beszerzés" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
+                        <input type="text" id="description" placeholder="Pl. Takarmány beszerzés" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required />
                     </div>
                     <div>
                         <label for="amount" class="block text-sm font-medium text-gray-700">Összeg (Ft)</label>
-                        <input type="number" id="amount" placeholder="10000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
+                        <input type="number" id="amount" placeholder="10000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required />
                     </div>
                     <div>
                         <label for="business-area" class="block text-sm font-medium text-gray-700">Üzletág</label>
@@ -146,7 +135,7 @@
                     <div>
                         <label for="payment-method" class="block text-sm font-medium text-gray-700">Fizetési mód</label>
                         <select id="payment-method" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
-                            <option value="Kézpénz">Kézpénz</option>
+                            <option value="Készpénz">Készpénz</option>
                             <option value="Utalás">Utalás</option>
                             <option value="MyPOS">MyPOS</option>
                             <option value="Barion">Barion</option>
@@ -154,16 +143,16 @@
                     </div>
                     <div class="flex items-center space-x-4 mt-6">
                         <label class="inline-flex items-center">
-                            <input type="radio" name="transaction-type" value="income" checked class="form-radio text-green-600 h-4 w-4">
+                            <input type="radio" name="transaction-type" value="income" checked class="h-4 w-4" />
                             <span class="ml-2 text-sm text-gray-700">Bevétel</span>
                         </label>
                         <label class="inline-flex items-center">
-                            <input type="radio" name="transaction-type" value="expense" class="form-radio text-red-600 h-4 w-4">
+                            <input type="radio" name="transaction-type" value="expense" class="h-4 w-4" />
                             <span class="ml-2 text-sm text-gray-700">Kiadás</span>
                         </label>
                     </div>
                     <div class="flex items-center space-x-2 mt-6">
-                        <input type="checkbox" id="invoiced" class="form-checkbox text-indigo-600 h-4 w-4">
+                        <input type="checkbox" id="invoiced" class="h-4 w-4" />
                         <label for="invoiced" class="text-sm text-gray-700">Számla</label>
                     </div>
                 </div>
@@ -171,26 +160,24 @@
             </form>
         </div>
 
-        <!-- Tranzakciók táblázata -->
+        <!-- Transactions Table -->
         <div class="card">
             <h2 class="text-2xl font-semibold text-gray-800 mb-4">Részletes Tranzakciók</h2>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dátum</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Üzletág</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leírás</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Összeg</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fizetési Mód</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Számla</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Típus</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dátum</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Üzletág</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leírás</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Összeg</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fizetési Mód</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Számla</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Típus</th>
+                            <th class="px-6 py-3"></th>
                         </tr>
                     </thead>
-                    <tbody id="transaction-list" class="bg-white divide-y divide-gray-200">
-                        <!-- Tranzakciók ide kerülnek JS-sel -->
-                    </tbody>
+                    <tbody id="transaction-list" class="bg-white divide-y divide-gray-200"></tbody>
                 </table>
             </div>
             <div class="mt-4 text-center">
@@ -199,7 +186,7 @@
         </div>
     </div>
 
-    <!-- Modal for confirmation -->
+    <!-- Confirm Modal -->
     <div id="confirm-modal" class="modal hidden">
         <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
             <h3 class="text-lg font-bold text-gray-900 mb-4">Megerősítés</h3>
@@ -212,19 +199,34 @@
     </div>
 
     <script type="module">
+        // --- Canvas/előnézet kompatibilitás ---
+        const PREVIEW = !['localhost','127.0.0.1','vallalkozasi-koltsegvetes-app.web.app','vallalkozasi-koltsegvetes-app.firebaseapp.com'].includes(location.hostname);
+
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            onSnapshot,
+            query,
+            doc,
+            deleteDoc,
+            getDocs,
+            writeBatch,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase konfiguráció
+        // Firebase konfiguráció (ha nem engedélyezett a domain, előnézet mód indul)
         const firebaseConfig = {
             apiKey: "AIzaSyDNIjjqn3U954Liv_Uevb_98kBI7yz9_Mk",
             authDomain: "vallalkozasi-koltsegvetes-app.firebaseapp.com",
             projectId: "vallalkozasi-koltsegvetes-app",
-            storageBucket: "vallalkozasi-koltsegvetes-app.firebasestorage.app",
+            storageBucket: "vallalkozasi-koltsegvetes-app.appspot.com",
             messagingSenderId: "957517210915",
             appId: "1:957517210915:web:9811f265ee72d4e1381896"
         };
+
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseApp = initializeApp(firebaseConfig);
         const auth = getAuth(firebaseApp);
@@ -262,6 +264,84 @@
         let unsubscribeFromTransactions = null;
         let currentUserId = null;
 
+        // --- Preview mód: Firebase nélkül demó adatokkal ---
+        function runPreviewDemo() {
+            // Előnézet UI megjelenítése
+            loadingScreen.classList.add('hidden');
+            authContainer.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+            userIdSpan.textContent = 'preview@local.test';
+
+            // Demó tranzakciók (augusztus, szeptember)
+            const demo = [
+                { date: '2025-08-12', businessArea: 'Webshop', description: 'Rendelés #A123', amount: 42000, paymentMethod: 'Barion', invoiced: true, type: 'income' },
+                { date: '2025-08-13', businessArea: 'Állatpanzió', description: 'Takarmány', amount: 15000, paymentMethod: 'Utalás', invoiced: false, type: 'expense' },
+                { date: '2025-09-01', businessArea: 'Kutyakiképzés', description: 'Csoportos óra díj', amount: 18000, paymentMethod: 'Készpénz', invoiced: true, type: 'income' },
+                { date: '2025-09-02', businessArea: 'Állattartás', description: 'Állatorvosi költség', amount: 12000, paymentMethod: 'Utalás', invoiced: true, type: 'expense' }
+            ];
+
+            let totalIncome = 0, totalExpense = 0;
+            let totalInvoicedNet = 0, totalNotInvoicedNet = 0;
+            const monthly = new Map();
+            transactionList.innerHTML = '';
+
+            demo.forEach((d, idx) => {
+                const amount = Number(d.amount) || 0;
+                const isIncome = d.type === 'income';
+                if (isIncome) totalIncome += amount; else totalExpense += amount;
+                if (d.invoiced) totalInvoicedNet += isIncome ? amount : -amount; else totalNotInvoicedNet += isIncome ? amount : -amount;
+
+                const dt = new Date(d.date);
+                const ym = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+                if (!monthly.has(ym)) monthly.set(ym, { income: 0, expense: 0 });
+                const b = monthly.get(ym);
+                if (isIncome) b.income += amount; else b.expense += amount;
+
+                const row = document.createElement('tr');
+                row.className = isIncome ? 'bg-green-50' : 'bg-red-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${d.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${d.businessArea}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${d.description}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm ${isIncome ? 'text-green-600' : 'text-red-600'}">${amount.toLocaleString('hu-HU')} Ft</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${d.paymentMethod}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${d.invoiced ? '✅' : '❌'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${isIncome ? 'Bevétel' : 'Kiadás'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button disabled class="opacity-40 cursor-not-allowed">Törlés</button>
+                    </td>`;
+                transactionList.appendChild(row);
+            });
+
+            totalIncomeSpan.textContent = `${totalIncome.toLocaleString('hu-HU')} Ft`;
+            totalExpenseSpan.textContent = `${totalExpense.toLocaleString('hu-HU')} Ft`;
+            balanceSpan.textContent = `${(totalIncome - totalExpense).toLocaleString('hu-HU')} Ft`;
+            totalInvoicedSpan.textContent = `${totalInvoicedNet.toLocaleString('hu-HU')} Ft`;
+            totalNotInvoicedSpan.textContent = `${totalNotInvoicedNet.toLocaleString('hu-HU')} Ft`;
+
+            const monthlyTable = document.getElementById('monthly-table');
+            if (monthlyTable) {
+                monthlyTable.innerHTML = '';
+                const months = Array.from(monthly.keys()).sort().reverse();
+                months.forEach((ym) => {
+                    const { income, expense } = monthly.get(ym);
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="px-6 py-3 text-sm text-gray-700">${ym}</td>
+                        <td class="px-6 py-3 text-sm text-green-700">${income.toLocaleString('hu-HU')} Ft</td>
+                        <td class="px-6 py-3 text-sm text-red-700">${expense.toLocaleString('hu-HU')} Ft</td>
+                        <td class="px-6 py-3 text-sm font-semibold">${(income - expense).toLocaleString('hu-HU')} Ft</td>`;
+                    monthlyTable.appendChild(tr);
+                });
+            }
+
+            // Formok letiltása előnézetben
+            authForm.querySelectorAll('input,button').forEach(el => el.disabled = true);
+            transactionForm.querySelectorAll('input,select,button').forEach(el => el.disabled = true);
+            clearAllBtn.disabled = true;
+            logoutBtn.disabled = true;
+        }
+
         const showMessage = (message, isError = true) => {
             authMessage.textContent = message;
             authMessage.style.color = isError ? 'red' : 'green';
@@ -274,90 +354,113 @@
             appContainer.classList.remove('hidden');
             userIdSpan.textContent = user.email;
             currentUserId = user.uid;
-            
-            if (unsubscribeFromTransactions) {
-                unsubscribeFromTransactions();
-            }
 
-            const q = query(
-                collection(db, `/artifacts/${appId}/users/${currentUserId}/transactions`)
-            );
-            
-            unsubscribeFromTransactions = onSnapshot(q, (querySnapshot) => {
+            if (unsubscribeFromTransactions) unsubscribeFromTransactions();
+
+            const qRef = query(collection(db, `artifacts/${appId}/users/${currentUserId}/transactions`));
+
+            unsubscribeFromTransactions = onSnapshot(qRef, (querySnapshot) => {
                 let totalIncome = 0;
                 let totalExpense = 0;
-                let totalInvoiced = 0;
-                let totalNotInvoiced = 0;
+                let totalInvoicedNet = 0; // Számlás nettó (bevétel-kiadás)
+                let totalNotInvoicedNet = 0; // Nem számlás nettó (bevétel-kiadás)
+                const monthly = new Map(); // key: YYYY-MM, value: {income, expense}
                 transactionList.innerHTML = '';
-                
+
                 if (querySnapshot.empty) {
                     const row = document.createElement('tr');
-                    row.innerHTML = `<td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">Nincsenek tranzakciók.</td>`;
+                    row.innerHTML = `<td colspan=\"8\" class=\"px-6 py-4 text-center text-sm text-gray-500\">Nincsenek tranzakciók.</td>`;
                     transactionList.appendChild(row);
                 } else {
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        const amount = parseFloat(data.amount);
-                        
-                        if (data.type === 'income') {
-                            totalIncome += amount;
+                    querySnapshot.forEach((txDoc) => {
+                        const data = txDoc.data();
+                        const amount = Number(data.amount) || 0;
+                        const isIncome = data.type === 'income';
+
+                        // Összesítők
+                        if (isIncome) totalIncome += amount; else totalExpense += amount;
+                        if (data.invoiced) {
+                            totalInvoicedNet += isIncome ? amount : -amount;
                         } else {
-                            totalExpense += amount;
+                            totalNotInvoicedNet += isIncome ? amount : -amount;
                         }
 
-                        if (data.invoiced) {
-                            totalInvoiced += amount;
-                        } else {
-                            totalNotInvoiced += amount;
-                        }
-                        
+                        // Havi kimutatás
+                        const ym = (() => {
+                            const d = data.date ? new Date(data.date) : null;
+                            if (!d || isNaN(d)) return 'Ismeretlen';
+                            const y = d.getFullYear();
+                            const m = String(d.getMonth() + 1).padStart(2, '0');
+                            return `${y}-${m}`;
+                        })();
+                        if (!monthly.has(ym)) monthly.set(ym, { income: 0, expense: 0 });
+                        const bucket = monthly.get(ym);
+                        if (isIncome) bucket.income += amount; else bucket.expense += amount;
+
+                        // Tábla sor
                         const row = document.createElement('tr');
-                        row.className = data.type === 'income' ? 'bg-green-50' : 'bg-red-50';
+                        row.className = isIncome ? 'bg-green-50' : 'bg-red-50';
                         row.innerHTML = `
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.date}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${data.businessArea}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.description}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm ${data.type === 'income' ? 'text-green-600' : 'text-red-600'}">${amount.toLocaleString('hu-HU')} Ft</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.paymentMethod}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.invoiced ? '✅' : '❌'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.type === 'income' ? 'Bevétel' : 'Kiadás'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button data-id="${doc.id}" class="text-indigo-600 hover:text-indigo-900 delete-btn">Törlés</button>
-                            </td>
-                        `;
+                            <td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-500\">${data.date ?? ''}</td>
+                            <td class=\"px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900\">${data.businessArea ?? ''}</td>
+                            <td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-500\">${data.description ?? ''}</td>
+                            <td class=\"px-6 py-4 whitespace-nowrap text-sm ${isIncome ? 'text-green-600' : 'text-red-600'}\">${amount.toLocaleString('hu-HU')} Ft</td>
+                            <td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-500\">${data.paymentMethod ?? ''}</td>
+                            <td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-500\">${data.invoiced ? '✅' : '❌'}</td>
+                            <td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-500\">${isIncome ? 'Bevétel' : 'Kiadás'}</td>
+                            <td class=\"px-6 py-4 whitespace-nowrap text-right text-sm font-medium\">
+                                <button data-id=\"${txDoc.id}\" class=\"text-indigo-600 hover:text-indigo-900 delete-btn\">Törlés</button>
+                            </td>`;
                         transactionList.appendChild(row);
                     });
                 }
-                
+
+                // Főkártyák frissítése
                 totalIncomeSpan.textContent = `${totalIncome.toLocaleString('hu-HU')} Ft`;
                 totalExpenseSpan.textContent = `${totalExpense.toLocaleString('hu-HU')} Ft`;
                 balanceSpan.textContent = `${(totalIncome - totalExpense).toLocaleString('hu-HU')} Ft`;
-                totalInvoicedSpan.textContent = `${totalInvoiced.toLocaleString('hu-HU')} Ft`;
-                totalNotInvoicedSpan.textContent = `${totalNotInvoiced.toLocaleString('hu-HU')} Ft`;
+                totalInvoicedSpan.textContent = `${totalInvoicedNet.toLocaleString('hu-HU')} Ft`;
+                totalNotInvoicedSpan.textContent = `${totalNotInvoicedNet.toLocaleString('hu-HU')} Ft`;
 
-                // Add event listeners to delete buttons
-                document.querySelectorAll('.delete-btn').forEach(button => {
+                // Havi táblázat render
+                const monthlyTable = document.getElementById('monthly-table');
+                if (monthlyTable) {
+                    monthlyTable.innerHTML = '';
+                    const months = Array.from(monthly.keys()).sort().reverse();
+                    months.forEach((ym) => {
+                        const { income, expense } = monthly.get(ym);
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class=\"px-6 py-3 text-sm text-gray-700\">${ym}</td>
+                            <td class=\"px-6 py-3 text-sm text-green-700\">${income.toLocaleString('hu-HU')} Ft</td>
+                            <td class=\"px-6 py-3 text-sm text-red-700\">${expense.toLocaleString('hu-HU')} Ft</td>
+                            <td class=\"px-6 py-3 text-sm font-semibold\">${(income - expense).toLocaleString('hu-HU')} Ft</td>`;
+                        monthlyTable.appendChild(tr);
+                    });
+                }
+
+                // Delete gombok eseménykezelői
+                document.querySelectorAll('.delete-btn').forEach((button) => {
                     button.addEventListener('click', async (e) => {
-                        const docId = e.target.dataset.id;
-                        confirmMessage.textContent = "Biztosan törölni szeretnéd ezt a tranzakciót?";
+                        const docId = e.currentTarget.dataset.id;
+                        confirmMessage.textContent = 'Biztosan törölni szeretnéd ezt a tranzakciót?';
+                        confirmOkBtn.textContent = 'Törlés';
                         confirmModal.classList.remove('hidden');
                         confirmOkBtn.onclick = async () => {
                             try {
-                                const docRef = doc(db, `/artifacts/${appId}/users/${currentUserId}/transactions/${docId}`);
+                                const docRef = doc(db, `artifacts/${appId}/users/${currentUserId}/transactions/${docId}`);
                                 await deleteDoc(docRef);
                                 confirmModal.classList.add('hidden');
                             } catch (error) {
-                                console.error("Hiba a tranzakció törlésekor:", error);
+                                console.error('Hiba a tranzakció törlésekor:', error);
                                 confirmModal.classList.add('hidden');
                             }
                         };
-                        confirmCancelBtn.onclick = () => {
-                            confirmModal.classList.add('hidden');
-                        };
+                        confirmCancelBtn.onclick = () => confirmModal.classList.add('hidden');
                     });
                 });
             }, (error) => {
-                console.error("Hiba a tranzakciók figyelésekor:", error);
+                console.error('Hiba a tranzakciók figyelésekor:', error);
             });
         };
 
@@ -367,19 +470,19 @@
             authContainer.classList.remove('hidden');
         };
 
-        // Auth state listener
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                showApp(user);
-            } else {
-                showAuth();
-            }
-        });
+        // Auth state
+        if (PREVIEW) {
+            runPreviewDemo();
+        } else {
+            onAuthStateChanged(auth, (user) => {
+                if (user) showApp(user); else showAuth();
+            });
+        }
 
-        // Auth form submission
+        // Auth submit
         authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = emailInput.value;
+            const email = emailInput.value.trim();
             const password = passwordInput.value;
             authSubmitBtn.disabled = true;
             authMessage.classList.add('hidden');
@@ -391,112 +494,94 @@
                     await createUserWithEmailAndPassword(auth, email, password);
                     showMessage('Sikeres regisztráció! Jelentkezz be.', false);
                     isLoginMode = true;
-                    authTitle.textContent = "Bejelentkezés";
-                    authSubmitBtn.textContent = "Bejelentkezés";
-                    toggleAuthBtn.textContent = "Még nincs fiókom, regisztrálok";
+                    authTitle.textContent = 'Bejelentkezés';
+                    authSubmitBtn.textContent = 'Bejelentkezés';
+                    toggleAuthBtn.textContent = 'Még nincs fiókom, regisztrálok';
                 }
             } catch (error) {
-                console.error("Auth hiba:", error);
-                let message = "Hiba történt. Kérlek, próbáld újra.";
-                if (error.code === 'auth/invalid-email') {
-                    message = "Hibás email cím.";
-                } else if (error.code === 'auth/user-not-found') {
-                    message = "A felhasználó nem található.";
-                } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                    message = "Hibás jelszó.";
-                } else if (error.code === 'auth/email-already-in-use') {
-                    message = "Az email cím már használatban van.";
-                } else if (error.code === 'auth/weak-password') {
-                    message = "A jelszónak legalább 6 karakter hosszúnak kell lennie.";
-                }
+                console.error('Auth hiba:', error);
+                let message = 'Hiba történt. Kérlek, próbáld újra.';
+                if (error.code === 'auth/invalid-email') message = 'Hibás email cím.';
+                else if (error.code === 'auth/user-not-found') message = 'A felhasználó nem található.';
+                else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') message = 'Hibás jelszó.';
+                else if (error.code === 'auth/email-already-in-use') message = 'Az email cím már használatban van.';
+                else if (error.code === 'auth/weak-password') message = 'A jelszónak legalább 6 karakter hosszúnak kell lennie.';
                 showMessage(message);
             } finally {
                 authSubmitBtn.disabled = false;
             }
         });
 
-        // Toggle login/registration mode
+        // Toggle login/register
         toggleAuthBtn.addEventListener('click', () => {
             isLoginMode = !isLoginMode;
             if (isLoginMode) {
-                authTitle.textContent = "Bejelentkezés";
-                authSubmitBtn.textContent = "Bejelentkezés";
-                toggleAuthBtn.textContent = "Még nincs fiókom, regisztrálok";
+                authTitle.textContent = 'Bejelentkezés';
+                authSubmitBtn.textContent = 'Bejelentkezés';
+                toggleAuthBtn.textContent = 'Még nincs fiókom, regisztrálok';
             } else {
-                authTitle.textContent = "Regisztráció";
-                authSubmitBtn.textContent = "Regisztráció";
-                toggleAuthBtn.textContent = "Már van fiókom, bejelentkezem";
+                authTitle.textContent = 'Regisztráció';
+                authSubmitBtn.textContent = 'Regisztráció';
+                toggleAuthBtn.textContent = 'Már van fiókom, bejelentkezem';
             }
             authMessage.classList.add('hidden');
         });
 
         // Logout
         logoutBtn.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-            } catch (error) {
-                console.error("Kijelentkezési hiba:", error);
-            }
+            try { await signOut(auth); } catch (error) { console.error('Kijelentkezési hiba:', error); }
         });
 
-        // Transaction form submission
+        // Add transaction
         transactionForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!currentUserId) {
-                showMessage("Nincs bejelentkezett felhasználó. Kérlek, jelentkezz be.");
-                return;
-            }
+            if (!currentUserId) { showMessage('Nincs bejelentkezett felhasználó. Kérlek, jelentkezz be.'); return; }
 
             const newTransaction = {
-                date: document.getElementById('date').value,
-                description: document.getElementById('description').value,
-                amount: parseFloat(document.getElementById('amount').value),
+                date: (document.getElementById('date').value || '').trim(),
+                description: (document.getElementById('description').value || '').trim(),
+                amount: Number(document.getElementById('amount').value) || 0,
                 businessArea: document.getElementById('business-area').value,
                 paymentMethod: document.getElementById('payment-method').value,
                 type: document.querySelector('input[name="transaction-type"]:checked').value,
                 invoiced: document.getElementById('invoiced').checked,
-                createdAt: new Date()
+                createdAt: serverTimestamp()
             };
 
             try {
-                await addDoc(collection(db, `/artifacts/${appId}/users/${currentUserId}/transactions`), newTransaction);
+                await addDoc(collection(db, `artifacts/${appId}/users/${currentUserId}/transactions`), newTransaction);
                 transactionForm.reset();
                 document.getElementById('date').valueAsDate = new Date();
             } catch (error) {
-                console.error("Hiba a tranzakció hozzáadásakor:", error);
-                showMessage("Hiba a tranzakció hozzáadásakor. Kérlek, ellenőrizd a beállításokat.");
+                console.error('Hiba a tranzakció hozzáadásakor:', error);
+                showMessage('Hiba a tranzakció hozzáadásakor. Kérlek, ellenőrizd a beállításokat.');
             }
         });
 
         // Clear all transactions
         clearAllBtn.addEventListener('click', async () => {
-            confirmMessage.textContent = "Biztosan törölni szeretnéd az összes tranzakciót? Ez a művelet nem vonható vissza!";
-            confirmOkBtn.textContent = "Törlés";
+            confirmMessage.textContent = 'Biztosan törölni szeretnéd az összes tranzakciót? Ez a művelet nem vonható vissza!';
+            confirmOkBtn.textContent = 'Törlés';
             confirmModal.classList.remove('hidden');
 
             confirmOkBtn.onclick = async () => {
                 try {
-                    const q = query(collection(db, `/artifacts/${appId}/users/${currentUserId}/transactions`));
-                    const querySnapshot = await getDocs(q);
+                    const qRef = query(collection(db, `artifacts/${appId}/users/${currentUserId}/transactions`));
+                    const snap = await getDocs(qRef);
                     const batch = writeBatch(db);
-                    querySnapshot.forEach((doc) => {
-                        batch.delete(doc.ref);
-                    });
+                    snap.forEach((d) => batch.delete(d.ref));
                     await batch.commit();
                     confirmModal.classList.add('hidden');
                 } catch (error) {
-                    console.error("Hiba az összes adat törlésekor:", error);
+                    console.error('Hiba az összes adat törlésekor:', error);
                     confirmModal.classList.add('hidden');
                 }
             };
-            confirmCancelBtn.onclick = () => {
-                confirmModal.classList.add('hidden');
-            };
+            confirmCancelBtn.onclick = () => confirmModal.classList.add('hidden');
         });
 
-        // Set initial date
+        // Initial date
         document.getElementById('date').valueAsDate = new Date();
     </script>
 </body>
 </html>
-
